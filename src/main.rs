@@ -18,6 +18,7 @@ pub enum Direction {
     Right
 }
 
+#[derive(PartialEq, Copy, Clone)]
 pub struct BodyPart {
     x: u16,
     y: u16,
@@ -34,6 +35,7 @@ pub struct Game<T,F> {
     stdin: F,
     snake: Snake,
     food: (u16,u16),
+    score: i32,
     field: [[char; 60]; 20]
 }
 
@@ -52,6 +54,9 @@ impl<T: Write,F: Read> Game<T,F>{
         }
     }
 
+   /**********************************************************************
+    *       w,a,s,d or h,j,k,l to move snake and redraw everything       *
+    **********************************************************************/
     fn move_snake(&mut self) {
         let mut key = [0];
         self.stdin.read(&mut key).unwrap();
@@ -69,6 +74,9 @@ impl<T: Write,F: Read> Game<T,F>{
         self.print_food();
     }
 
+   /**********************************************************************
+    * change direction of the snake to all parts and make it move        *
+    **********************************************************************/
     fn take_direction(&mut self, dir: Direction) {
         let mut head = true;
         for i in (0..self.snake.body.len()).rev() {
@@ -112,6 +120,40 @@ impl<T: Write,F: Read> Game<T,F>{
         }
     }
 
+   /**********************************************************************
+    *      when snake eats food it grows by one part                     *
+    **********************************************************************/
+    fn grow_snake(&mut self) {
+        let snake_size = self.snake.body.len() - 1;
+        let tail = self.snake.body[snake_size].clone();
+        match tail.direction {
+            Direction::Up => {
+                self.snake.body.push(BodyPart {
+                    x: tail.x, y: tail.y - 1, part: "║", direction: tail.direction
+                });
+            },
+            Direction::Down => {
+                self.snake.body.push(BodyPart {
+                    x: tail.x, y: tail.y + 1, part: "║", direction: tail.direction
+                });
+            },
+            Direction::Right => {
+                self.snake.body.push(BodyPart {
+                    x: tail.x - 1, y: tail.y, part: "═", direction: tail.direction
+                });
+            },
+            Direction::Left => {
+                self.snake.body.push(BodyPart {
+                    x: tail.x + 1, y: tail.y, part: "═", direction: tail.direction
+                });
+            },
+        }
+        self.score += 10;
+    }
+
+   /**********************************************************************
+    *                         reprint snake                              *
+    **********************************************************************/
     fn print_snake(&mut self) {
         for i in self.snake.body.iter() {
             write!(self.stdout,"{}{}", cursor::Goto(i.x, i.y), i.part).unwrap();
@@ -119,6 +161,9 @@ impl<T: Write,F: Read> Game<T,F>{
         }
     }
 
+   /**********************************************************************
+    *               check if snake hit a wall or itself                  *
+    **********************************************************************/
     fn check_game_over(&mut self) -> bool {
         for i in 0..60 {
             if self.snake.body[0].x == i &&
@@ -132,23 +177,38 @@ impl<T: Write,F: Read> Game<T,F>{
                 return true;
             }
         }
+        let mut head = true;
+        for i in self.snake.body.iter() {
+            if head == false {
+                if self.snake.body[0].x == i.x &&
+                    self.snake.body[0].y == i.y {
+                        return true;
+                    }
+            }
+            head = false;
+        }
         false
     }
 
+   /**********************************************************************
+    *          check if snake found food to eat                          *
+    **********************************************************************/
     fn check_food(&mut self) {
         if self.snake.body[0].x == self.food.0 &&
             self.snake.body[0].y == self.food.1 {
                 self.food = food_gen();
+                self.grow_snake();
             }
     }
 
+   /**********************************************************************
+    *              reprint food every time                               *
+    **********************************************************************/
     fn print_food(&mut self) {
         let food = "×";
         write!(self.stdout, "{}{}", cursor::Goto(self.food.0, self.food.1), food).unwrap();
         self.stdout.flush().unwrap();
     }
-
-
 
     fn start_snake_game(&mut self) {
         write!(self.stdout, "{}", cursor::Hide).unwrap();
@@ -170,8 +230,9 @@ impl<T: Write,F: Read> Game<T,F>{
     }
 }
 
-
-
+/**********************************************************************
+ *               initialize everything(snake, game, score)            *
+ **********************************************************************/
 fn init() {
     let stdout = stdout().into_raw_mode().unwrap();
     let stdin = async_stdin();
@@ -185,6 +246,7 @@ fn init() {
             ]
         },
         food: food_gen(),
+        score: 0,
         field: init_array()
     };
     game.start_snake_game();
@@ -204,8 +266,10 @@ fn init_array() -> [[char; 60]; 20] {
     field
 }
 
+/**********************************************************************
+ *               generate food at a random location                   *
+ **********************************************************************/
 fn food_gen() -> (u16, u16) {
-    //let food = "×";
     let rx = rand::thread_rng().gen_range(2, 60);
     let ry = rand::thread_rng().gen_range(2, 20);
     (rx, ry)
