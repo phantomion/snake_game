@@ -260,7 +260,6 @@ impl<T: Write,F: Read> Game<T,F>{
             b'q' | b'Q' | _=> {
                 write!(self.stdout, "{}{}{}", clear::All, style::Reset, cursor::Show).unwrap();
                 self.stdout.flush().unwrap();
-                exit(0);
             }
         }
     }
