@@ -35,6 +35,7 @@ pub struct Game<T,F> {
     snake: Snake,
     food: (u16,u16),
     score: i32,
+    speed: u64,
     field: [[char; 60]; 20]
 }
 
@@ -61,16 +62,28 @@ impl<T: Write,F: Read> Game<T,F>{
         self.stdin.read(&mut key).unwrap();
         match key[0]{
             b'q' => exit(0),
-            b'w' | b'k' if self.snake.body[0].direction != Direction::Down => self.take_direction(Direction::Up),
-            b'a' | b'h' if self.snake.body[0].direction != Direction::Right => self.take_direction(Direction::Left),
-            b'd' | b'l' if self.snake.body[0].direction != Direction::Left => self.take_direction(Direction::Right),
-            b's' | b'j' if self.snake.body[0].direction != Direction::Up => self.take_direction(Direction::Down),
-            _ => {},
+            b'w' | b'k' if self.snake.body[0].direction != Direction::Down
+                && self.snake.body[0].direction != Direction::Up=> self.take_direction(Direction::Up),
+            b'a' | b'h' if self.snake.body[0].direction != Direction::Right
+                && self.snake.body[0].direction != Direction::Left=> self.take_direction(Direction::Left),
+            b'd' | b'l' if self.snake.body[0].direction != Direction::Left
+                && self.snake.body[0].direction != Direction::Right => self.take_direction(Direction::Right),
+            b's' | b'j' if self.snake.body[0].direction != Direction::Up
+                && self.snake.body[0].direction != Direction::Down=> self.take_direction(Direction::Down),
+            _ => self.automove(),
         }
         self.check_food();
         self.print_field();
         self.print_snake();
         self.print_food();
+    }
+
+   /**********************************************************************
+    *                   keeps the snake moving                           *
+    **********************************************************************/
+    fn automove(&mut self) {
+        let dir = self.snake.body[0].direction.clone();
+        self.take_direction(dir);
     }
 
    /**********************************************************************
@@ -148,6 +161,9 @@ impl<T: Write,F: Read> Game<T,F>{
             },
         }
         self.score += 10;
+        if self.speed > 140 {
+            self.speed -= 20;
+        }
     }
 
    /**********************************************************************
@@ -216,7 +232,7 @@ impl<T: Write,F: Read> Game<T,F>{
         loop {
             self.move_snake();
             if self.check_game_over() {break};
-            sleep(Duration::from_millis(50));
+            sleep(Duration::from_millis(self.speed));
         }
         self.end_game();
     }
@@ -238,6 +254,7 @@ impl<T: Write,F: Read> Game<T,F>{
                 ];
                 self.score = 0;
                 self.food = food_gen();
+                self.speed = 300;
                 self.start_snake_game();
             },
             b'q' | b'Q' | _=> {
@@ -266,6 +283,7 @@ fn init() {
         },
         food: food_gen(),
         score: 0,
+        speed: 300,
         field: init_array()
     };
     game.start_snake_game();
