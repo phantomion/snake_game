@@ -1,10 +1,11 @@
 extern crate termion;
+extern crate rand;
 use termion::{clear, cursor};
-use termion::event::Key;
-use termion::input::TermRead;
 use termion::async_stdin;
 use termion::raw::IntoRawMode;
+use rand::Rng;
 use std::io::{stdout, Write, stdin, Read};
+use std::vec::Vec;
 use std::thread::sleep;
 use std::time::Duration;
 use std::process::exit;
@@ -29,11 +30,10 @@ pub struct Snake {
 }
 
 pub struct Game<T,F> {
-    width: u16,
-    height: u16,
     stdout: T,
     stdin: F,
     snake: Snake,
+    food: (u16,u16),
     field: [[char; 60]; 20]
 }
 
@@ -52,12 +52,6 @@ impl<T: Write,F: Read> Game<T,F>{
         }
     }
 
-    fn init_snake(&mut self) {
-        write!(self.stdout,"{}{}", cursor::Goto(self.width/2, self.height/2), self.snake.body[0].part).unwrap();
-        write!(self.stdout,"{}{}", cursor::Goto(self.width/2+1, self.height/2), self.snake.body[1].part).unwrap();
-        self.stdout.flush().unwrap();
-    }
-
     fn move_snake(&mut self) {
         let mut key = [0];
         self.stdin.read(&mut key).unwrap();
@@ -69,12 +63,21 @@ impl<T: Write,F: Read> Game<T,F>{
             b's' | b'j' if self.snake.body[0].direction != Direction::Up => self.take_direction(Direction::Down),
             _ => {},
         }
+        self.check_food();
         self.print_field();
         self.print_snake();
+        self.print_food();
     }
 
     fn take_direction(&mut self, dir: Direction) {
         let mut head = true;
+        for i in (0..self.snake.body.len()).rev() {
+            if i != 0 {
+                self.snake.body[i].direction = self.snake.body[i-1].direction;
+                self.snake.body[i].x = self.snake.body[i-1].x;
+                self.snake.body[i].y = self.snake.body[i-1].y;
+            }
+        }
         for i in &mut self.snake.body {
             if head==true {
                 match dir {
@@ -100,10 +103,10 @@ impl<T: Write,F: Read> Game<T,F>{
             }
             else {
                 match i.direction {
-                    Direction::Up => i.part = "||",
-                    Direction::Down => i.part = "||",
-                    Direction::Left => i.part = "=",
-                    Direction::Right => i.part = "=",
+                    Direction::Up => i.part = "║",
+                    Direction::Down => i.part = "║",
+                    Direction::Left => i.part = "═",
+                    Direction::Right => i.part = "═",
                 }
             }
         }
@@ -116,13 +119,53 @@ impl<T: Write,F: Read> Game<T,F>{
         }
     }
 
+    fn check_game_over(&mut self) -> bool {
+        for i in 0..60 {
+            if self.snake.body[0].x == i &&
+                (self.snake.body[0].y == 1 || self.snake.body[0].y == 20) {
+                return true;
+            }
+        }
+        for i in 0..20 {
+            if self.snake.body[0].y == i &&
+                (self.snake.body[0].x == 1 || self.snake.body[0].x == 60) {
+                return true;
+            }
+        }
+        false
+    }
+
+    fn check_food(&mut self) {
+        if self.snake.body[0].x == self.food.0 &&
+            self.snake.body[0].y == self.food.1 {
+                self.food = food_gen();
+            }
+    }
+
+    fn print_food(&mut self) {
+        let food = "×";
+        write!(self.stdout, "{}{}", cursor::Goto(self.food.0, self.food.1), food).unwrap();
+        self.stdout.flush().unwrap();
+    }
+
+
+
     fn start_snake_game(&mut self) {
         write!(self.stdout, "{}", cursor::Hide).unwrap();
         self.print_field();
-        self.init_snake();
+        self.print_snake();
         loop {
             self.move_snake();
-            sleep(Duration::from_millis(300));
+            if self.check_game_over() {break};
+            sleep(Duration::from_millis(100));
+        }
+        let mut stdin = stdin();
+        let mut key = [0];
+        stdin.read(&mut key).unwrap();
+        match key[0] {
+            b'q' | b'Q' => exit(0),
+            b'r' | b'R' => init(),
+            _ => {}
         }
     }
 }
@@ -130,19 +173,18 @@ impl<T: Write,F: Read> Game<T,F>{
 
 
 fn init() {
-    let mut stdout = stdout().into_raw_mode().unwrap();
+    let stdout = stdout().into_raw_mode().unwrap();
     let stdin = async_stdin();
     let mut game = Game{
-        width: 60,
-        height: 20,
         stdout: stdout,
         stdin: stdin,
         snake: Snake {
             body: vec![
                 BodyPart{x: 60/2, y: 20/2, part: "<", direction: Direction::Left},
-                BodyPart{x: 60/2, y: (20/2) + 1, part: "=", direction: Direction::Left}
+                BodyPart{x: 60/2 + 1, y: (20/2), part: "═", direction: Direction::Left}
             ]
         },
+        food: food_gen(),
         field: init_array()
     };
     game.start_snake_game();
@@ -160,6 +202,13 @@ fn init_array() -> [[char; 60]; 20] {
         field[i][59] = '#';
     }
     field
+}
+
+fn food_gen() -> (u16, u16) {
+    //let food = "×";
+    let rx = rand::thread_rng().gen_range(2, 60);
+    let ry = rand::thread_rng().gen_range(2, 20);
+    (rx, ry)
 }
 
 fn main() {
