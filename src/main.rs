@@ -1,7 +1,6 @@
 extern crate termion;
 extern crate rand;
-use termion::{clear, cursor};
-use termion::async_stdin;
+use termion::{clear, cursor, style, async_stdin};
 use termion::raw::IntoRawMode;
 use rand::Rng;
 use std::io::{stdout, Write, stdin, Read};
@@ -217,15 +216,35 @@ impl<T: Write,F: Read> Game<T,F>{
         loop {
             self.move_snake();
             if self.check_game_over() {break};
-            sleep(Duration::from_millis(100));
+            sleep(Duration::from_millis(50));
         }
+        self.end_game();
+    }
+
+    fn end_game(&mut self) {
+        write!(self.stdout,"{}-------------------------", cursor::Goto((60/2) -10, 20/2 - 2)).unwrap();
+        write!(self.stdout, "{}|        Score: {}      |", cursor::Goto((60/2) -10, 20/2 - 1), self.score).unwrap();
+        write!(self.stdout, "{}|(r)etry          (q)uit|", cursor::Goto((60/2) -10, 20/2)).unwrap();
+        write!(self.stdout,"{}-------------------------", cursor::Goto((60/2) -10, 20/2 + 1)).unwrap();
+        self.stdout.flush().unwrap();
         let mut stdin = stdin();
         let mut key = [0];
-        stdin.read(&mut key).unwrap();
+        stdin.read_exact(&mut key).unwrap();
         match key[0] {
-            b'q' | b'Q' => exit(0),
-            b'r' | b'R' => init(),
-            _ => {}
+            b'r' | b'R' => {
+                self.snake.body = vec![
+                    BodyPart{x: 60/2, y: 20/2, part: "<", direction: Direction::Left},
+                    BodyPart{x: 60/2 + 1, y: (20/2), part: "═", direction: Direction::Left}
+                ];
+                self.score = 0;
+                self.food = food_gen();
+                self.start_snake_game();
+            },
+            b'q' | b'Q' | _=> {
+                write!(self.stdout, "{}{}{}", clear::All, style::Reset, cursor::Show).unwrap();
+                self.stdout.flush().unwrap();
+                exit(0);
+            }
         }
     }
 }
