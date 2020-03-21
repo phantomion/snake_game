@@ -1,6 +1,7 @@
 # My snake game
 
 Looks like this.
+
 ![snake_game_image](https://raw.github.com/KostasKyriakou/snake_game/master/snake_game.jpg)
 
 ## Install rust

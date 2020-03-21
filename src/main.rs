@@ -1,6 +1,6 @@
 extern crate termion;
 extern crate rand;
-use termion::{clear, cursor, style, async_stdin};
+use termion::{clear, cursor, style, async_stdin, color};
 use termion::raw::IntoRawMode;
 use rand::Rng;
 use std::io::{stdout, Write, stdin, Read};
@@ -44,7 +44,7 @@ impl<T: Write,F: Read> Game<T,F>{
     *                      Creates and resets field                      *
     **********************************************************************/
     fn print_field(&mut self) {
-        write!(self.stdout,"{}{}", clear::All, cursor::Goto(1,1)).unwrap();
+        write!(self.stdout,"{}{}{}", clear::All, cursor::Goto(1,1), color::Fg(color::Blue)).unwrap();
         self.stdout.flush().unwrap();
         for i in 0..20 {
             for j in 0..60 {
@@ -52,6 +52,7 @@ impl<T: Write,F: Read> Game<T,F>{
             }
             write!(self.stdout, "{}\n", cursor::Goto(1,(i+1) as u16)).unwrap();
         }
+        write!(self.stdout,"{}", color::Fg(color::Reset)).unwrap();
     }
 
    /**********************************************************************
@@ -171,7 +172,7 @@ impl<T: Write,F: Read> Game<T,F>{
     **********************************************************************/
     fn print_snake(&mut self) {
         for i in self.snake.body.iter() {
-            write!(self.stdout,"{}{}", cursor::Goto(i.x, i.y), i.part).unwrap();
+            write!(self.stdout,"{}{}{}{}", cursor::Goto(i.x, i.y), color::Fg(color::Green), i.part, color::Fg(color::Reset)).unwrap();
             self.stdout.flush().unwrap();
         }
     }
@@ -221,7 +222,7 @@ impl<T: Write,F: Read> Game<T,F>{
     **********************************************************************/
     fn print_food(&mut self) {
         let food = "×";
-        write!(self.stdout, "{}{}", cursor::Goto(self.food.0, self.food.1), food).unwrap();
+        write!(self.stdout, "{}{}{}{}", cursor::Goto(self.food.0, self.food.1), color::Fg(color::Red), food, color::Fg(color::Reset)).unwrap();
         self.stdout.flush().unwrap();
     }
 
@@ -238,9 +239,10 @@ impl<T: Write,F: Read> Game<T,F>{
     }
 
     fn end_game(&mut self) {
-        write!(self.stdout,"{}-------------------------", cursor::Goto((60/2) -10, 20/2 - 2)).unwrap();
-        write!(self.stdout, "{}|        Score: {}      |", cursor::Goto((60/2) -10, 20/2 - 1), self.score).unwrap();
-        write!(self.stdout, "{}|(r)etry          (q)uit|", cursor::Goto((60/2) -10, 20/2)).unwrap();
+        write!(self.stdout,"{}-------------------------", cursor::Goto((60/2) -10, 20/2 - 3)).unwrap();
+        write!(self.stdout,"{}|       Game Over!      |", cursor::Goto((60/2) -10, 20/2 - 2)).unwrap();
+        write!(self.stdout,"{}|       Score: {}       |", cursor::Goto((60/2) -10, 20/2 - 1), self.score).unwrap();
+        write!(self.stdout,"{}|(r)etry          (q)uit|", cursor::Goto((60/2) -10, 20/2)).unwrap();
         write!(self.stdout,"{}-------------------------", cursor::Goto((60/2) -10, 20/2 + 1)).unwrap();
         self.stdout.flush().unwrap();
         let mut stdin = stdin();
