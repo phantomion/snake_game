@@ -14,4 +14,3 @@ Simply `cargo run` to run this or `cargo install --path .` to install it.
 
 ### Keybindings
 `w,a,s,d` like any game ever or `h,j,k,l` for vim users.
-`q` to quit at any time.

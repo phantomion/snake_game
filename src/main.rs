@@ -62,7 +62,6 @@ impl<T: Write,F: Read> Game<T,F>{
         let mut key = [0];
         self.stdin.read(&mut key).unwrap();
         match key[0]{
-            b'q' => exit(0),
             b'w' | b'k' if self.snake.body[0].direction != Direction::Down
                 && self.snake.body[0].direction != Direction::Up=> self.take_direction(Direction::Up),
             b'a' | b'h' if self.snake.body[0].direction != Direction::Right
@@ -103,19 +102,19 @@ impl<T: Write,F: Read> Game<T,F>{
             if head==true {
                 match dir {
                     Direction::Up => {
-                        i.part = "^";
+                        i.part = "▲";
                         i.y -= 1;
                     },
                     Direction::Down => {
-                        i.part = "v";
+                        i.part = "▼";
                         i.y += 1;
                     },
                     Direction::Left => {
-                        i.part = "<";
+                        i.part = "◀";
                         i.x -= 1;
                     },
                     Direction::Right => {
-                        i.part = ">";
+                        i.part = "▶";
                         i.x += 1;
                     },
                 }
@@ -124,10 +123,11 @@ impl<T: Write,F: Read> Game<T,F>{
             }
             else {
                 match i.direction {
-                    Direction::Up => i.part = "║",
-                    Direction::Down => i.part = "║",
-                    Direction::Left => i.part = "═",
-                    Direction::Right => i.part = "═",
+                    Direction::Up => i.part = "▪",
+                    Direction::Down => i.part = "▪",
+                    Direction::Left => i.part = "▪",
+                    Direction::Right => i.part = "▪",
+//═║
                 }
             }
         }
@@ -142,22 +142,22 @@ impl<T: Write,F: Read> Game<T,F>{
         match tail.direction {
             Direction::Up => {
                 self.snake.body.push(BodyPart {
-                    x: tail.x, y: tail.y - 1, part: "║", direction: tail.direction
+                    x: tail.x, y: tail.y - 1, part: "▪", direction: tail.direction
                 });
             },
             Direction::Down => {
                 self.snake.body.push(BodyPart {
-                    x: tail.x, y: tail.y + 1, part: "║", direction: tail.direction
+                    x: tail.x, y: tail.y + 1, part: "▪", direction: tail.direction
                 });
             },
             Direction::Right => {
                 self.snake.body.push(BodyPart {
-                    x: tail.x - 1, y: tail.y, part: "═", direction: tail.direction
+                    x: tail.x - 1, y: tail.y, part: "▪", direction: tail.direction
                 });
             },
             Direction::Left => {
                 self.snake.body.push(BodyPart {
-                    x: tail.x + 1, y: tail.y, part: "═", direction: tail.direction
+                    x: tail.x + 1, y: tail.y, part: "▪", direction: tail.direction
                 });
             },
         }
@@ -213,8 +213,22 @@ impl<T: Write,F: Read> Game<T,F>{
         if self.snake.body[0].x == self.food.0 &&
             self.snake.body[0].y == self.food.1 {
                 self.food = food_gen();
+                loop {
+                    if self.validate_food() {break;}
+                }
                 self.grow_snake();
             }
+    }
+
+    fn validate_food(&mut self) -> bool {
+        for i in self.snake.body.iter() {
+            if i.x == self.food.0
+                && i.y == self.food.1 {
+                    self.food = food_gen();
+                    return false;
+                }
+        }
+        true
     }
 
    /**********************************************************************
@@ -223,6 +237,15 @@ impl<T: Write,F: Read> Game<T,F>{
     fn print_food(&mut self) {
         let food = "×";
         write!(self.stdout, "{}{}{}{}", cursor::Goto(self.food.0, self.food.1), color::Fg(color::Red), food, color::Fg(color::Reset)).unwrap();
+        self.stdout.flush().unwrap();
+    }
+
+    fn print_game_over(&mut self) {
+        write!(self.stdout,"{}-------------------------", cursor::Goto((60/2) -10, 20/2 - 2)).unwrap();
+        write!(self.stdout,"{}|       Game Over!      |", cursor::Goto((60/2) -10, 20/2 - 1)).unwrap();
+        write!(self.stdout,"{}|       Score: {}      |", cursor::Goto((60/2) -10, 20/2), self.score).unwrap();
+        write!(self.stdout,"{}|(r)etry          (q)uit|", cursor::Goto((60/2) -10, 20/2 + 1)).unwrap();
+        write!(self.stdout,"{}-------------------------", cursor::Goto((60/2) -10, 20/2 + 2)).unwrap();
         self.stdout.flush().unwrap();
     }
 
@@ -239,20 +262,15 @@ impl<T: Write,F: Read> Game<T,F>{
     }
 
     fn end_game(&mut self) {
-        write!(self.stdout,"{}-------------------------", cursor::Goto((60/2) -10, 20/2 - 3)).unwrap();
-        write!(self.stdout,"{}|       Game Over!      |", cursor::Goto((60/2) -10, 20/2 - 2)).unwrap();
-        write!(self.stdout,"{}|       Score: {}       |", cursor::Goto((60/2) -10, 20/2 - 1), self.score).unwrap();
-        write!(self.stdout,"{}|(r)etry          (q)uit|", cursor::Goto((60/2) -10, 20/2)).unwrap();
-        write!(self.stdout,"{}-------------------------", cursor::Goto((60/2) -10, 20/2 + 1)).unwrap();
-        self.stdout.flush().unwrap();
+        self.print_game_over();
         let mut stdin = stdin();
         let mut key = [0];
         stdin.read_exact(&mut key).unwrap();
         match key[0] {
             b'r' | b'R' => {
                 self.snake.body = vec![
-                    BodyPart{x: 60/2, y: 20/2, part: "<", direction: Direction::Left},
-                    BodyPart{x: 60/2 + 1, y: (20/2), part: "═", direction: Direction::Left}
+                    BodyPart{x: 60/2, y: 20/2, part: "◀", direction: Direction::Left},
+                    BodyPart{x: 60/2 + 1, y: (20/2), part: "▪", direction: Direction::Left}
                 ];
                 self.score = 0;
                 self.food = food_gen();
@@ -278,8 +296,8 @@ fn init() {
         stdin: stdin,
         snake: Snake {
             body: vec![
-                BodyPart{x: 60/2, y: 20/2, part: "<", direction: Direction::Left},
-                BodyPart{x: 60/2 + 1, y: (20/2), part: "═", direction: Direction::Left}
+                BodyPart{x: 60/2, y: 20/2, part: "◀", direction: Direction::Left},
+                BodyPart{x: 60/2 + 1, y: (20/2), part: "▪", direction: Direction::Left}
             ]
         },
         food: food_gen(),
