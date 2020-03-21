@@ -7,7 +7,6 @@ use std::io::{stdout, Write, stdin, Read};
 use std::vec::Vec;
 use std::thread::sleep;
 use std::time::Duration;
-use std::process::exit;
 
 #[derive(PartialEq, Copy, Clone)]
 pub enum Direction {
