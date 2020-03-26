@@ -34,6 +34,7 @@ pub struct Game<T,F> {
     snake: Snake,
     food: (u16,u16),
     score: i32,
+    highscore: i32,
     speed: u64,
     field: [[char; 60]; 20]
 }
@@ -52,6 +53,7 @@ impl<T: Write,F: Read> Game<T,F>{
             write!(self.stdout, "{}\n", cursor::Goto(1,(i+1) as u16)).unwrap();
         }
         write!(self.stdout,"{}", color::Fg(color::Reset)).unwrap();
+        self.stdout.flush().unwrap();
     }
 
    /**********************************************************************
@@ -74,6 +76,7 @@ impl<T: Write,F: Read> Game<T,F>{
         self.check_food();
         self.print_field();
         self.print_snake();
+        self.print_score();
         self.print_food();
     }
 
@@ -161,9 +164,18 @@ impl<T: Write,F: Read> Game<T,F>{
             },
         }
         self.score += 10;
+        if self.score > self.highscore {
+            self.highscore = self.score;
+        }
         if self.speed > 140 {
             self.speed -= 20;
         }
+    }
+
+    fn print_score(&mut self) {
+        write!(self.stdout,"{}{}Hi-Score: {}{}", cursor::Goto(70, 5), color::Fg(color::Green), self.highscore, color::Fg(color::Reset)).unwrap();
+        write!(self.stdout,"{}{}Score: {}{}", cursor::Goto(70, 6), color::Fg(color::Green), self.score, color::Fg(color::Reset)).unwrap();
+        self.stdout.flush().unwrap();
     }
 
    /**********************************************************************
@@ -172,8 +184,8 @@ impl<T: Write,F: Read> Game<T,F>{
     fn print_snake(&mut self) {
         for i in self.snake.body.iter() {
             write!(self.stdout,"{}{}{}{}", cursor::Goto(i.x, i.y), color::Fg(color::Green), i.part, color::Fg(color::Reset)).unwrap();
-            self.stdout.flush().unwrap();
         }
+        self.stdout.flush().unwrap();
     }
 
    /**********************************************************************
@@ -240,8 +252,9 @@ impl<T: Write,F: Read> Game<T,F>{
     }
 
     fn print_game_over(&mut self) {
-        write!(self.stdout,"{}-------------------------", cursor::Goto((60/2) -10, 20/2 - 2)).unwrap();
-        write!(self.stdout,"{}|       Game Over!      |", cursor::Goto((60/2) -10, 20/2 - 1)).unwrap();
+        write!(self.stdout,"{}-------------------------", cursor::Goto((60/2) -10, 20/2 - 3)).unwrap();
+        write!(self.stdout,"{}|       Game Over!      |", cursor::Goto((60/2) -10, 20/2 - 2)).unwrap();
+        write!(self.stdout,"{}|     HighScore: {}    |", cursor::Goto((60/2) -10, 20/2 - 1), self.score).unwrap();
         write!(self.stdout,"{}|       Score: {}      |", cursor::Goto((60/2) -10, 20/2), self.score).unwrap();
         write!(self.stdout,"{}|(r)etry          (q)uit|", cursor::Goto((60/2) -10, 20/2 + 1)).unwrap();
         write!(self.stdout,"{}-------------------------", cursor::Goto((60/2) -10, 20/2 + 2)).unwrap();
@@ -301,6 +314,7 @@ fn init() {
         },
         food: food_gen(),
         score: 0,
+        highscore: 0,
         speed: 300,
         field: init_array()
     };
