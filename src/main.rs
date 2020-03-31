@@ -3,7 +3,7 @@ extern crate rand;
 use termion::{clear, cursor, style, async_stdin, color};
 use termion::raw::IntoRawMode;
 use rand::Rng;
-use std::io::{stdout, Write, stdin, Read};
+use std::io::{stdout, Write, Read};
 use std::vec::Vec;
 use std::thread::sleep;
 use std::time::Duration;
@@ -275,24 +275,32 @@ impl<T: Write,F: Read> Game<T,F>{
 
     fn end_game(&mut self) {
         self.print_game_over();
-        let mut stdin = stdin();
-        let mut key = [0];
-        stdin.read_exact(&mut key).unwrap();
-        match key[0] {
-            b'r' | b'R' => {
-                self.snake.body = vec![
-                    BodyPart{x: 60/2, y: 20/2, part: "◀", direction: Direction::Left},
-                    BodyPart{x: 60/2 + 1, y: (20/2), part: "▪", direction: Direction::Left}
-                ];
-                self.score = 0;
-                self.food = food_gen();
-                self.speed = 300;
-                self.start_snake_game();
-            },
-            b'q' | b'Q' | _=> {
-                write!(self.stdout, "{}{}{}", clear::All, style::Reset, cursor::Show).unwrap();
-                self.stdout.flush().unwrap();
+        let mut game_over = false;
+        loop {
+            let mut key = [0];
+            self.stdin.read(&mut key).unwrap();
+            match key[0] {
+                b'r' | b'R' => {
+                    self.snake.body = vec![
+                        BodyPart{x: 60/2, y: 20/2, part: "◀", direction: Direction::Left},
+                        BodyPart{x: 60/2 + 1, y: (20/2), part: "▪", direction: Direction::Left}
+                    ];
+                    self.score = 0;
+                    self.food = food_gen();
+                    self.speed = 300;
+                    break;
+                },
+                b'q' | b'Q'=> {
+                    game_over = true;
+                    write!(self.stdout, "{}{}{}", clear::All, style::Reset, cursor::Show).unwrap();
+                    self.stdout.flush().unwrap();
+                    break;
+                }
+                _ => {},
             }
+        }
+        if game_over==false {
+            self.start_snake_game();
         }
     }
 }
