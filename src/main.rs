@@ -59,10 +59,11 @@ impl<T: Write,F: Read> Game<T,F>{
    /**********************************************************************
     *       w,a,s,d or h,j,k,l to move snake and redraw everything       *
     **********************************************************************/
-    fn move_snake(&mut self) {
+    fn move_snake(&mut self) -> bool {
         let mut key = [0];
         self.stdin.read(&mut key).unwrap();
         match key[0]{
+            b'q' | b'Q' => return false,
             b'w' | b'k' if self.snake.body[0].direction != Direction::Down
                 && self.snake.body[0].direction != Direction::Up=> self.take_direction(Direction::Up),
             b'a' | b'h' if self.snake.body[0].direction != Direction::Right
@@ -74,10 +75,8 @@ impl<T: Write,F: Read> Game<T,F>{
             _ => self.automove(),
         }
         self.check_food();
-        self.print_field();
         self.print_snake();
-        self.print_score();
-        self.print_food();
+        return true;
     }
 
    /**********************************************************************
@@ -93,6 +92,8 @@ impl<T: Write,F: Read> Game<T,F>{
     **********************************************************************/
     fn take_direction(&mut self, dir: Direction) {
         let mut head = true;
+        write!(self.stdout, "{} ",cursor::Goto(self.snake.body[self.snake.body.len()-1].x,self.snake.body[self.snake.body.len()-1].y))
+            .unwrap();
         for i in (0..self.snake.body.len()).rev() {
             if i != 0 {
                 self.snake.body[i].direction = self.snake.body[i-1].direction;
@@ -129,7 +130,6 @@ impl<T: Write,F: Read> Game<T,F>{
                     Direction::Down => i.part = "▪",
                     Direction::Left => i.part = "▪",
                     Direction::Right => i.part = "▪",
-//═║
                 }
             }
         }
@@ -170,6 +170,8 @@ impl<T: Write,F: Read> Game<T,F>{
         if self.speed > 140 {
             self.speed -= 20;
         }
+        self.print_score();
+        self.print_food();
     }
 
     fn print_score(&mut self) {
@@ -264,18 +266,23 @@ impl<T: Write,F: Read> Game<T,F>{
     fn start_snake_game(&mut self) {
         write!(self.stdout, "{}", cursor::Hide).unwrap();
         self.print_field();
+        self.print_score();
+        self.print_food();
         self.print_snake();
         loop {
-            self.move_snake();
+            if !self.move_snake() {
+                break;
+            }
             if self.check_game_over() {break};
             sleep(Duration::from_millis(self.speed));
         }
-        self.end_game();
+        if !self.end_game() {
+            self.start_snake_game();
+        }
     }
 
-    fn end_game(&mut self) {
+    fn end_game(&mut self) -> bool {
         self.print_game_over();
-        let mut game_over = false;
         loop {
             let mut key = [0];
             self.stdin.read(&mut key).unwrap();
@@ -288,19 +295,15 @@ impl<T: Write,F: Read> Game<T,F>{
                     self.score = 0;
                     self.food = food_gen();
                     self.speed = 300;
-                    break;
+                    return false;
                 },
                 b'q' | b'Q'=> {
-                    game_over = true;
                     write!(self.stdout, "{}{}{}", clear::All, style::Reset, cursor::Show).unwrap();
                     self.stdout.flush().unwrap();
-                    break;
+                    return true;
                 }
                 _ => {},
             }
-        }
-        if game_over==false {
-            self.start_snake_game();
         }
     }
 }
