@@ -40,9 +40,7 @@ pub struct Game<T,F> {
 }
 
 impl<T: Write,F: Read> Game<T,F>{
-   /**********************************************************************
-    *                      Creates and resets field                      *
-    **********************************************************************/
+    ///creates and resets field
     fn print_field(&mut self) {
         write!(self.stdout,"{}{}{}", clear::All, cursor::Goto(1,1), color::Fg(color::Blue)).unwrap();
         self.stdout.flush().unwrap();
@@ -56,9 +54,7 @@ impl<T: Write,F: Read> Game<T,F>{
         self.stdout.flush().unwrap();
     }
 
-   /**********************************************************************
-    *       w,a,s,d or h,j,k,l to move snake and redraw everything       *
-    **********************************************************************/
+    ///w,a,s,d or h,j,k,l to move snake and redraw everything
     fn move_snake(&mut self) -> bool {
         let mut key = [0];
         self.stdin.read(&mut key).unwrap();
@@ -79,17 +75,13 @@ impl<T: Write,F: Read> Game<T,F>{
         return true;
     }
 
-   /**********************************************************************
-    *                   keeps the snake moving                           *
-    **********************************************************************/
+    ///keeps the snake moving
     fn automove(&mut self) {
         let dir = self.snake.body[0].direction.clone();
         self.take_direction(dir);
     }
 
-   /**********************************************************************
-    * change direction of the snake to all parts and make it move        *
-    **********************************************************************/
+    ///change direction of the snake to all parts and make it move
     fn take_direction(&mut self, dir: Direction) {
         let mut head = true;
         write!(self.stdout, "{} ",cursor::Goto(self.snake.body[self.snake.body.len()-1].x,self.snake.body[self.snake.body.len()-1].y))
@@ -135,9 +127,7 @@ impl<T: Write,F: Read> Game<T,F>{
         }
     }
 
-   /**********************************************************************
-    *      when snake eats food it grows by one part                     *
-    **********************************************************************/
+    ///when snake eats food it grows by one part
     fn grow_snake(&mut self) {
         let snake_size = self.snake.body.len() - 1;
         let tail = self.snake.body[snake_size].clone();
@@ -174,15 +164,14 @@ impl<T: Write,F: Read> Game<T,F>{
         self.print_food();
     }
 
+    ///prints the score next to field
     fn print_score(&mut self) {
         write!(self.stdout,"{}{}Hi-Score: {}{}", cursor::Goto(70, 5), color::Fg(color::Green), self.highscore, color::Fg(color::Reset)).unwrap();
         write!(self.stdout,"{}{}Score: {}{}", cursor::Goto(70, 6), color::Fg(color::Green), self.score, color::Fg(color::Reset)).unwrap();
         self.stdout.flush().unwrap();
     }
 
-   /**********************************************************************
-    *                         reprint snake                              *
-    **********************************************************************/
+    ///reprint snake
     fn print_snake(&mut self) {
         for i in self.snake.body.iter() {
             write!(self.stdout,"{}{}{}{}", cursor::Goto(i.x, i.y), color::Fg(color::Green), i.part, color::Fg(color::Reset)).unwrap();
@@ -190,9 +179,7 @@ impl<T: Write,F: Read> Game<T,F>{
         self.stdout.flush().unwrap();
     }
 
-   /**********************************************************************
-    *               check if snake hit a wall or itself                  *
-    **********************************************************************/
+    ///check if snake hit a wall or itself
     fn check_game_over(&mut self) -> bool {
         for i in 0..60 {
             if self.snake.body[0].x == i &&
@@ -219,9 +206,7 @@ impl<T: Write,F: Read> Game<T,F>{
         false
     }
 
-   /**********************************************************************
-    *          check if snake found food to eat                          *
-    **********************************************************************/
+    ///check if snake found food to eat
     fn check_food(&mut self) {
         if self.snake.body[0].x == self.food.0 &&
             self.snake.body[0].y == self.food.1 {
@@ -233,6 +218,7 @@ impl<T: Write,F: Read> Game<T,F>{
             }
     }
 
+    ///check if food is spawned on the snake and try again
     fn validate_food(&mut self) -> bool {
         for i in self.snake.body.iter() {
             if i.x == self.food.0
@@ -244,15 +230,14 @@ impl<T: Write,F: Read> Game<T,F>{
         true
     }
 
-   /**********************************************************************
-    *              reprint food every time                               *
-    **********************************************************************/
+    ///reprint food
     fn print_food(&mut self) {
         let food = "×";
         write!(self.stdout, "{}{}{}{}", cursor::Goto(self.food.0, self.food.1), color::Fg(color::Red), food, color::Fg(color::Reset)).unwrap();
         self.stdout.flush().unwrap();
     }
 
+    ///print game over screen
     fn print_game_over(&mut self) {
         write!(self.stdout,"{}-------------------------", cursor::Goto((60/2) -10, 20/2 - 3)).unwrap();
         write!(self.stdout,"{}|       Game Over!      |", cursor::Goto((60/2) -10, 20/2 - 2)).unwrap();
@@ -263,6 +248,7 @@ impl<T: Write,F: Read> Game<T,F>{
         self.stdout.flush().unwrap();
     }
 
+    ///game begins, everything is printed and checks snake movement
     fn start_snake_game(&mut self) {
         write!(self.stdout, "{}", cursor::Hide).unwrap();
         self.print_field();
@@ -281,6 +267,7 @@ impl<T: Write,F: Read> Game<T,F>{
         }
     }
 
+    ///print game over screen and quit or retry
     fn end_game(&mut self) -> bool {
         self.print_game_over();
         loop {
@@ -298,7 +285,7 @@ impl<T: Write,F: Read> Game<T,F>{
                     return false;
                 },
                 b'q' | b'Q'=> {
-                    write!(self.stdout, "{}{}{}", clear::All, style::Reset, cursor::Show).unwrap();
+                    write!(self.stdout, "{}{}{}{}", clear::All, style::Reset, cursor::Show, cursor::Goto(1,1)).unwrap();
                     self.stdout.flush().unwrap();
                     return true;
                 }
@@ -308,9 +295,7 @@ impl<T: Write,F: Read> Game<T,F>{
     }
 }
 
-/**********************************************************************
- *               initialize everything(snake, game, score)            *
- **********************************************************************/
+///initialize everything(snake, game, score)
 fn init() {
     let stdout = stdout().into_raw_mode().unwrap();
     let stdin = async_stdin();
@@ -332,6 +317,7 @@ fn init() {
     game.start_snake_game();
 }
 
+///init field
 fn init_array() -> [[char; 60]; 20] {
     let mut field: [[char; 60];20] = [[' '; 60];20];
     for i in 0..60 {
@@ -346,9 +332,7 @@ fn init_array() -> [[char; 60]; 20] {
     field
 }
 
-/**********************************************************************
- *               generate food at a random location                   *
- **********************************************************************/
+///generate food at a random location
 fn food_gen() -> (u16, u16) {
     let rx = rand::thread_rng().gen_range(2, 60);
     let ry = rand::thread_rng().gen_range(2, 20);
