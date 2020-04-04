@@ -194,6 +194,9 @@ impl<T: Write,F: Read> Game<T,F>{
             }
         }
         let mut head = true;
+        if self.snake.body.len() < 5 {
+            return false;
+        }
         for i in self.snake.body.iter() {
             if head == false {
                 if self.snake.body[0].x == i.x &&
@@ -241,8 +244,8 @@ impl<T: Write,F: Read> Game<T,F>{
     fn print_game_over(&mut self) {
         write!(self.stdout,"{}-------------------------", cursor::Goto((60/2) -10, 20/2 - 3)).unwrap();
         write!(self.stdout,"{}|       Game Over!      |", cursor::Goto((60/2) -10, 20/2 - 2)).unwrap();
-        write!(self.stdout,"{}|     HighScore: {}    {}|", cursor::Goto((60/2) -10, 20/2 - 1), self.score, cursor::Goto((60/2) + 14, (20/2) -1)).unwrap();
-        write!(self.stdout,"{}|       Score: {}      {}|", cursor::Goto((60/2) -10, 20/2), self.score, cursor::Goto((60/2) + 14, 20/2)).unwrap();
+        write!(self.stdout,"{}|     HighScore: {}   {}|", cursor::Goto((60/2) -10, 20/2 - 1), self.score, cursor::Goto((60/2) + 14, (20/2) -1)).unwrap();
+        write!(self.stdout,"{}|       Score: {}     {}|", cursor::Goto((60/2) -10, 20/2), self.score, cursor::Goto((60/2) + 14, 20/2)).unwrap();
         write!(self.stdout,"{}|(r)etry          (q)uit|", cursor::Goto((60/2) -10, 20/2 + 1)).unwrap();
         write!(self.stdout,"{}-------------------------", cursor::Goto((60/2) -10, 20/2 + 2)).unwrap();
         self.stdout.flush().unwrap();
