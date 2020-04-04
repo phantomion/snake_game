@@ -241,8 +241,8 @@ impl<T: Write,F: Read> Game<T,F>{
     fn print_game_over(&mut self) {
         write!(self.stdout,"{}-------------------------", cursor::Goto((60/2) -10, 20/2 - 3)).unwrap();
         write!(self.stdout,"{}|       Game Over!      |", cursor::Goto((60/2) -10, 20/2 - 2)).unwrap();
-        write!(self.stdout,"{}|     HighScore: {}    |", cursor::Goto((60/2) -10, 20/2 - 1), self.score).unwrap();
-        write!(self.stdout,"{}|       Score: {}      |", cursor::Goto((60/2) -10, 20/2), self.score).unwrap();
+        write!(self.stdout,"{}|     HighScore: {}    {}|", cursor::Goto((60/2) -10, 20/2 - 1), self.score, cursor::Goto((60/2) + 14, (20/2) -1)).unwrap();
+        write!(self.stdout,"{}|       Score: {}      {}|", cursor::Goto((60/2) -10, 20/2), self.score, cursor::Goto((60/2) + 14, 20/2)).unwrap();
         write!(self.stdout,"{}|(r)etry          (q)uit|", cursor::Goto((60/2) -10, 20/2 + 1)).unwrap();
         write!(self.stdout,"{}-------------------------", cursor::Goto((60/2) -10, 20/2 + 2)).unwrap();
         self.stdout.flush().unwrap();
@@ -321,13 +321,13 @@ fn init() {
 fn init_array() -> [[char; 60]; 20] {
     let mut field: [[char; 60];20] = [[' '; 60];20];
     for i in 0..60 {
-        field[0][i] = '#';
-        field[19][i] = '#';
+        field[0][i] = '■';
+        field[19][i] = '■';
     }
 
     for i in 0..20 {
-        field[i][0] = '#';
-        field[i][59] = '#';
+        field[i][0] = '■';
+        field[i][59] = '■';
     }
     field
 }
