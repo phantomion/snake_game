@@ -176,6 +176,8 @@ impl<T: Write,F: Read> Game<T,F>{
     fn print_score(&mut self) {
         write!(self.stdout,"{}{}Hi-Score: {}{}", cursor::Goto(70, 5), color::Fg(color::Green), self.highscore, color::Fg(color::Reset)).unwrap();
         write!(self.stdout,"{}{}Score: {}{}", cursor::Goto(70, 6), color::Fg(color::Green), self.score, color::Fg(color::Reset)).unwrap();
+        write!(self.stdout,"{}q: quit", cursor::Goto(70, 8)).unwrap();
+        write!(self.stdout,"{}p/s: pause/start", cursor::Goto(70, 9)).unwrap();
         self.stdout.flush().unwrap();
     }
 
