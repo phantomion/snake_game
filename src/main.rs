@@ -68,6 +68,14 @@ impl<T: Write,F: Read> Game<T,F>{
                 && self.snake.body[0].direction != Direction::Right => self.take_direction(Direction::Right),
             b's' | b'j' if self.snake.body[0].direction != Direction::Up
                 && self.snake.body[0].direction != Direction::Down=> self.take_direction(Direction::Down),
+            b'p' | b'P' => {
+                loop {
+                    self.stdin.read(&mut key).unwrap();
+                    if let b's' | b'S' = key[0] {
+                        break;
+                    }
+                }
+            },
             _ => self.automove(),
         }
         self.check_food();
