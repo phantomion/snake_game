@@ -142,12 +142,12 @@ impl<T: Write,F: Read> Game<T,F>{
         match tail.direction {
             Direction::Up => {
                 self.snake.body.push(BodyPart {
-                    x: tail.x, y: tail.y - 1, part: "▪", direction: tail.direction
+                    x: tail.x, y: tail.y + 1, part: "▪", direction: tail.direction
                 });
             },
             Direction::Down => {
                 self.snake.body.push(BodyPart {
-                    x: tail.x, y: tail.y + 1, part: "▪", direction: tail.direction
+                    x: tail.x, y: tail.y - 1, part: "▪", direction: tail.direction
                 });
             },
             Direction::Right => {
@@ -204,9 +204,6 @@ impl<T: Write,F: Read> Game<T,F>{
             }
         }
         let mut head = true;
-        if self.snake.body.len() < 5 {
-            return false;
-        }
         for i in self.snake.body.iter() {
             if head == false {
                 if self.snake.body[0].x == i.x &&
