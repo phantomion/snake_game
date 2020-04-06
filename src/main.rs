@@ -68,11 +68,11 @@ impl<T: Write,F: Read> Game<T,F>{
                 && self.snake.body[0].direction != Direction::Right => self.take_direction(Direction::Right),
             b's' | b'j' if self.snake.body[0].direction != Direction::Up
                 && self.snake.body[0].direction != Direction::Down=> self.take_direction(Direction::Down),
-            b'p' | b'P' => {
+            b' ' => {
                 let mut key = [0];
                 loop {
                     self.stdin.read(&mut key).unwrap();
-                    if let b'p' | b'P' = key[0] {
+                    if let b' ' = key[0] {
                         break;
                     }
                 }
@@ -178,7 +178,7 @@ impl<T: Write,F: Read> Game<T,F>{
         write!(self.stdout,"{}{}Hi-Score: {}{}", cursor::Goto(67, 5), color::Fg(color::Green), self.highscore, color::Fg(color::Reset)).unwrap();
         write!(self.stdout,"{}{}Score: {}{}", cursor::Goto(67, 6), color::Fg(color::Green), self.score, color::Fg(color::Reset)).unwrap();
         write!(self.stdout,"{}q: quit", cursor::Goto(67, 8)).unwrap();
-        write!(self.stdout,"{}p: pause/start", cursor::Goto(67, 9)).unwrap();
+        write!(self.stdout,"{}Space: pause/start", cursor::Goto(67, 9)).unwrap();
         self.stdout.flush().unwrap();
     }
 
