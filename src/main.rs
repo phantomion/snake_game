@@ -56,7 +56,7 @@ impl<T: Write,F: Read> Game<T,F>{
 
     ///w,a,s,d or h,j,k,l to move snake and redraw everything
     fn move_snake(&mut self) -> bool {
-        let mut key = [0];
+        let mut key: [u8; 100] = [0; 100];
         self.stdin.read(&mut key).unwrap();
         match key[0]{
             b'q' | b'Q' => return false,
@@ -69,9 +69,10 @@ impl<T: Write,F: Read> Game<T,F>{
             b's' | b'j' if self.snake.body[0].direction != Direction::Up
                 && self.snake.body[0].direction != Direction::Down=> self.take_direction(Direction::Down),
             b'p' | b'P' => {
+                let mut key = [0];
                 loop {
                     self.stdin.read(&mut key).unwrap();
-                    if let b's' | b'S' = key[0] {
+                    if let b'p' | b'P' = key[0] {
                         break;
                     }
                 }
@@ -165,7 +166,7 @@ impl<T: Write,F: Read> Game<T,F>{
         if self.score > self.highscore {
             self.highscore = self.score;
         }
-        if self.speed > 140 {
+        if self.speed > 100 {
             self.speed -= 20;
         }
         self.print_score();
@@ -174,10 +175,10 @@ impl<T: Write,F: Read> Game<T,F>{
 
     ///prints the score next to field
     fn print_score(&mut self) {
-        write!(self.stdout,"{}{}Hi-Score: {}{}", cursor::Goto(70, 5), color::Fg(color::Green), self.highscore, color::Fg(color::Reset)).unwrap();
-        write!(self.stdout,"{}{}Score: {}{}", cursor::Goto(70, 6), color::Fg(color::Green), self.score, color::Fg(color::Reset)).unwrap();
-        write!(self.stdout,"{}q: quit", cursor::Goto(70, 8)).unwrap();
-        write!(self.stdout,"{}p/s: pause/start", cursor::Goto(70, 9)).unwrap();
+        write!(self.stdout,"{}{}Hi-Score: {}{}", cursor::Goto(67, 5), color::Fg(color::Green), self.highscore, color::Fg(color::Reset)).unwrap();
+        write!(self.stdout,"{}{}Score: {}{}", cursor::Goto(67, 6), color::Fg(color::Green), self.score, color::Fg(color::Reset)).unwrap();
+        write!(self.stdout,"{}q: quit", cursor::Goto(67, 8)).unwrap();
+        write!(self.stdout,"{}p: pause/start", cursor::Goto(67, 9)).unwrap();
         self.stdout.flush().unwrap();
     }
 
@@ -291,7 +292,7 @@ impl<T: Write,F: Read> Game<T,F>{
                     ];
                     self.score = 0;
                     self.food = food_gen();
-                    self.speed = 300;
+                    self.speed = 260;
                     return false;
                 },
                 b'q' | b'Q'=> {
@@ -321,7 +322,7 @@ fn init() {
         food: food_gen(),
         score: 0,
         highscore: 0,
-        speed: 300,
+        speed: 260,
         field: init_array()
     };
     game.start_snake_game();
