@@ -35,6 +35,7 @@ pub struct Game<T,F> {
     food: (u16,u16),
     score: i32,
     highscore: i32,
+    last_dir: u8,
     speed: u64,
     field: [[char; 60]; 20]
 }
@@ -56,29 +57,37 @@ impl<T: Write,F: Read> Game<T,F>{
 
     ///w,a,s,d or h,j,k,l to move snake and redraw everything
     fn move_snake(&mut self) -> bool {
-        let mut key: [u8; 100] = [0; 100];
+        let mut key = [0];
         self.stdin.read(&mut key).unwrap();
-        match key[0]{
-            b'q' | b'Q' => return false,
-            b'w' | b'k' if self.snake.body[0].direction != Direction::Down
-                && self.snake.body[0].direction != Direction::Up=> self.take_direction(Direction::Up),
-            b'a' | b'h' if self.snake.body[0].direction != Direction::Right
-                && self.snake.body[0].direction != Direction::Left=> self.take_direction(Direction::Left),
-            b'd' | b'l' if self.snake.body[0].direction != Direction::Left
-                && self.snake.body[0].direction != Direction::Right => self.take_direction(Direction::Right),
-            b's' | b'j' if self.snake.body[0].direction != Direction::Up
-                && self.snake.body[0].direction != Direction::Down=> self.take_direction(Direction::Down),
-            b' ' => {
-                let mut key = [0];
-                loop {
-                    self.stdin.read(&mut key).unwrap();
-                    if let b' ' = key[0] {
-                        break;
-                    }
-                }
-            },
-            _ => self.automove(),
+        if key[0] == self.last_dir {
+            let mut key: [u8; 100] = [0; 100];
+            self.stdin.read(&mut key).unwrap();
+            self.automove();
         }
+        else {
+            match key[0]{
+                b'q' | b'Q' => return false,
+                b'w' | b'k' if self.snake.body[0].direction != Direction::Down
+                    && self.snake.body[0].direction != Direction::Up=> self.take_direction(Direction::Up),
+                b'a' | b'h' if self.snake.body[0].direction != Direction::Right
+                    && self.snake.body[0].direction != Direction::Left=> self.take_direction(Direction::Left),
+                b'd' | b'l' if self.snake.body[0].direction != Direction::Left
+                    && self.snake.body[0].direction != Direction::Right => self.take_direction(Direction::Right),
+                b's' | b'j' if self.snake.body[0].direction != Direction::Up
+                    && self.snake.body[0].direction != Direction::Down=> self.take_direction(Direction::Down),
+                b' ' => {
+                    let mut key = [0];
+                    loop {
+                        self.stdin.read(&mut key).unwrap();
+                        if let b' ' = key[0] {
+                            break;
+                        }
+                    }
+                },
+                _ => self.automove(),
+            }
+        }
+        self.last_dir = key[0];
         self.check_food();
         self.print_snake();
         return true;
@@ -322,6 +331,7 @@ fn init() {
         food: food_gen(),
         score: 0,
         highscore: 0,
+        last_dir: b'a',
         speed: 260,
         field: init_array()
     };
