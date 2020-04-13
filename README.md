@@ -1,6 +1,6 @@
 # My snake game
 
-Looks like this.
+Looks like this. This is with Roboto Mono Nerd Font. If you use a different font it may look different or distorted.
 
 ![snake_game_image](https://raw.github.com/KostasKyriakou/snake_game/master/snake_game.jpg)
 
