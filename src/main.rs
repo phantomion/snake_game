@@ -5,9 +5,11 @@ use std::io::{stdout, Read, Write};
 use std::thread::sleep;
 use std::time::Duration;
 use std::vec::Vec;
+use structopt::StructOpt;
 use termion::raw::IntoRawMode;
 use termion::{async_stdin, clear, color, cursor, style};
 
+const BORDER: char = '■';
 #[derive(PartialEq, Copy, Clone)]
 pub enum Direction {
     Up,
@@ -37,7 +39,16 @@ pub struct Game<T, F> {
     highscore: i32,
     last_dir: u8,
     speed: u64,
-    field: [[char; 60]; 20],
+    width: u16,
+    height: u16,
+}
+
+#[derive(StructOpt)]
+pub struct Opts {
+    #[structopt(short, long)]
+    width: Option<u16>,
+    #[structopt(short, long)]
+    height: Option<u16>,
 }
 
 impl<T: Write, F: Read> Game<T, F> {
@@ -52,11 +63,17 @@ impl<T: Write, F: Read> Game<T, F> {
         )
         .unwrap();
         self.stdout.flush().unwrap();
-        for i in 0..20 {
-            for j in 0..60 {
-                write!(self.stdout, "{}", self.field[i][j]).unwrap();
-            }
-            write!(self.stdout, "{}\n", cursor::Goto(1, (i + 1) as u16)).unwrap();
+        for i in 0..self.height {
+            write!(self.stdout, "{}", cursor::Goto(1, i + 1 as u16)).unwrap();
+            write!(self.stdout, "{}", BORDER).unwrap();
+            write!(self.stdout, "{}", cursor::Goto(self.width, i + 1 as u16)).unwrap();
+            write!(self.stdout, "{}", BORDER).unwrap();
+        }
+        for i in 0..self.width {
+            write!(self.stdout, "{}", cursor::Goto(i + 1 as u16, 1)).unwrap();
+            write!(self.stdout, "{}", BORDER).unwrap();
+            write!(self.stdout, "{}", cursor::Goto(i + 1 as u16, self.height)).unwrap();
+            write!(self.stdout, "{}", BORDER).unwrap();
         }
         write!(self.stdout, "{}", color::Fg(color::Reset)).unwrap();
         self.stdout.flush().unwrap();
@@ -227,7 +244,7 @@ impl<T: Write, F: Read> Game<T, F> {
         write!(
             self.stdout,
             "{}{}Hi-Score: {}{}",
-            cursor::Goto(67, 5),
+            cursor::Goto(self.width + 7, 5),
             color::Fg(color::Green),
             self.highscore,
             color::Fg(color::Reset)
@@ -236,14 +253,14 @@ impl<T: Write, F: Read> Game<T, F> {
         write!(
             self.stdout,
             "{}{}Score: {}{}",
-            cursor::Goto(67, 6),
+            cursor::Goto(self.width + 7, 6),
             color::Fg(color::Green),
             self.score,
             color::Fg(color::Reset)
         )
         .unwrap();
-        write!(self.stdout, "{}q: quit", cursor::Goto(67, 8)).unwrap();
-        write!(self.stdout, "{}Space: pause/start", cursor::Goto(67, 9)).unwrap();
+        write!(self.stdout, "{}q: quit", cursor::Goto(self.width + 7, 8)).unwrap();
+        write!(self.stdout, "{}Space: pause/start", cursor::Goto(self.width + 7, 9)).unwrap();
         self.stdout.flush().unwrap();
     }
 
@@ -265,16 +282,16 @@ impl<T: Write, F: Read> Game<T, F> {
 
     ///check if snake hit a wall or itself
     fn check_game_over(&mut self) -> bool {
-        for i in 0..60 {
+        for i in 0..self.width {
             if self.snake.body[0].x == i
-                && (self.snake.body[0].y == 1 || self.snake.body[0].y == 20)
+                && (self.snake.body[0].y == 1 || self.snake.body[0].y == self.height)
             {
                 return true;
             }
         }
-        for i in 0..20 {
+        for i in 0..self.height {
             if self.snake.body[0].y == i
-                && (self.snake.body[0].x == 1 || self.snake.body[0].x == 60)
+                && (self.snake.body[0].x == 1 || self.snake.body[0].x == self.width)
             {
                 return true;
             }
@@ -294,7 +311,7 @@ impl<T: Write, F: Read> Game<T, F> {
     ///check if snake found food to eat
     fn check_food(&mut self) {
         if self.snake.body[0].x == self.food.0 && self.snake.body[0].y == self.food.1 {
-            self.food = food_gen();
+            self.food = food_gen(self.width, self.height);
             loop {
                 if self.validate_food() {
                     break;
@@ -308,7 +325,7 @@ impl<T: Write, F: Read> Game<T, F> {
     fn validate_food(&mut self) -> bool {
         for i in self.snake.body.iter() {
             if i.x == self.food.0 && i.y == self.food.1 {
-                self.food = food_gen();
+                self.food = food_gen(self.width, self.height);
                 return false;
             }
         }
@@ -332,44 +349,60 @@ impl<T: Write, F: Read> Game<T, F> {
 
     ///print game over screen
     fn print_game_over(&mut self) {
+        let (screen_width, screen_width_border) = {
+            if self.width as i32 / 2 - 8 < 0 {
+                (1, 17)
+            }
+            else {
+                (self.width / 2 - 8, self.width / 2 + 8)
+            }
+        };
+        let screen_height = {
+            if self.height as i32 / 2 - 3 < 0 {
+                1
+            }
+            else {
+                self.height / 2 - 3
+            }
+        };
         write!(
             self.stdout,
-            "{}-------------------------",
-            cursor::Goto((60 / 2) - 10, 20 / 2 - 3)
+            "{}-----------------",
+            cursor::Goto(screen_width, screen_height)
         )
         .unwrap();
         write!(
             self.stdout,
-            "{}|       Game Over!      |",
-            cursor::Goto((60 / 2) - 10, 20 / 2 - 2)
+            "{}|   Game Over!  |",
+            cursor::Goto(screen_width, screen_height + 1)
         )
         .unwrap();
         write!(
             self.stdout,
-            "{}|     HighScore: {}   {}|",
-            cursor::Goto((60 / 2) - 10, 20 / 2 - 1),
+            "{}|HighScore: {}  {}|",
+            cursor::Goto(screen_width, screen_height + 2),
             self.score,
-            cursor::Goto((60 / 2) + 14, (20 / 2) - 1)
+            cursor::Goto(screen_width_border, screen_height + 2)
         )
         .unwrap();
         write!(
             self.stdout,
-            "{}|       Score: {}     {}|",
-            cursor::Goto((60 / 2) - 10, 20 / 2),
+            "{}|Score: {}    {}|",
+            cursor::Goto(screen_width, screen_height + 3),
             self.score,
-            cursor::Goto((60 / 2) + 14, 20 / 2)
+            cursor::Goto(screen_width_border, screen_height + 3)
         )
         .unwrap();
         write!(
             self.stdout,
-            "{}|(r)etry          (q)uit|",
-            cursor::Goto((60 / 2) - 10, 20 / 2 + 1)
+            "{}|(r)etry  (q)uit|",
+            cursor::Goto(screen_width, screen_height + 4)
         )
         .unwrap();
         write!(
             self.stdout,
-            "{}-------------------------",
-            cursor::Goto((60 / 2) - 10, 20 / 2 + 2)
+            "{}-----------------",
+            cursor::Goto(screen_width, screen_height + 5)
         )
         .unwrap();
         self.stdout.flush().unwrap();
@@ -406,20 +439,20 @@ impl<T: Write, F: Read> Game<T, F> {
                 b'r' | b'R' => {
                     self.snake.body = vec![
                         BodyPart {
-                            x: 60 / 2,
-                            y: 20 / 2,
+                            x: self.width / 2,
+                            y: self.height / 2,
                             part: "◀",
                             direction: Direction::Left,
                         },
                         BodyPart {
-                            x: 60 / 2 + 1,
-                            y: (20 / 2),
+                            x: self.width / 2 + 1,
+                            y: self.height / 2,
                             part: "▪",
                             direction: Direction::Left,
                         },
                     ];
                     self.score = 0;
-                    self.food = food_gen();
+                    self.food = food_gen(self.width, self.height);
                     self.speed = 260;
                     return false;
                 }
@@ -443,60 +476,59 @@ impl<T: Write, F: Read> Game<T, F> {
 }
 
 ///initialize everything(snake, game, score)
-fn init() {
+fn init(width: u16, height: u16) {
     let stdout = stdout().into_raw_mode().unwrap();
     let stdin = async_stdin();
-    let mut game = Game {
+    let _game = Game {
         stdout,
         stdin,
         snake: Snake {
             body: vec![
                 BodyPart {
-                    x: 60 / 2,
-                    y: 20 / 2,
+                    x: width / 2,
+                    y: height / 2,
                     part: "◀",
                     direction: Direction::Left,
                 },
                 BodyPart {
-                    x: 60 / 2 + 1,
-                    y: (20 / 2),
+                    x: width / 2 + 1,
+                    y: height / 2,
                     part: "▪",
                     direction: Direction::Left,
                 },
             ],
         },
-        food: food_gen(),
+        food: food_gen(width, height),
         score: 0,
         highscore: 0,
         last_dir: b'a',
         speed: 260,
-        field: init_array(),
-    };
-    game.start_snake_game();
-}
-
-///init field
-fn init_array() -> [[char; 60]; 20] {
-    let mut field: [[char; 60]; 20] = [[' '; 60]; 20];
-    for i in 0..60 {
-        field[0][i] = '■';
-        field[19][i] = '■';
+        width,
+        height,
     }
-
-    for i in 0..20 {
-        field[i][0] = '■';
-        field[i][59] = '■';
-    }
-    field
+    .start_snake_game();
 }
 
 ///generate food at a random location
-fn food_gen() -> (u16, u16) {
-    let rx = rand::thread_rng().gen_range(2, 60);
-    let ry = rand::thread_rng().gen_range(2, 20);
+fn food_gen(width: u16, height: u16) -> (u16, u16) {
+    let rx = rand::thread_rng().gen_range(2, width);
+    let ry = rand::thread_rng().gen_range(2, height);
     (rx, ry)
 }
 
 fn main() {
-    init();
+    let opts = Opts::from_args();
+    let height = match opts.height {
+        Some(height) => height,
+        None => 20,
+    };
+    let width = match opts.width {
+        Some(width) => width,
+        None => 60,
+    };
+    if height < 4 || width < 4 {
+        println!("Height and width need to be bigger than 4(2 of those are for borders).");
+        std::process::exit(1);
+    }
+    init(width, height);
 }
