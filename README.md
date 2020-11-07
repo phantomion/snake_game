@@ -15,3 +15,6 @@ Simply `cargo run` to run this or `cargo install --path .` to install it.
 ### Keybindings
 `w,a,s,d` like any game ever or `h,j,k,l` for vim users.`qq` to quit at any time.
 `Space` to pause/start.
+
+### Width and height
+You can change the width and height of the game with `-h` and `-w` options(e.g. -h 20 -w 30).
