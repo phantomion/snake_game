@@ -22,7 +22,7 @@ pub enum Direction {
 pub struct BodyPart {
     x: u16,
     y: u16,
-    part: &'static str,
+    part: char,
     direction: Direction,
 }
 
@@ -44,6 +44,7 @@ pub struct Game<T, F> {
 }
 
 #[derive(StructOpt)]
+#[structopt(about = "A terminal implementation of the classic snake game.")]
 pub struct Opts {
     #[structopt(short, long)]
     width: Option<u16>,
@@ -134,13 +135,11 @@ impl<T: Write, F: Read> Game<T, F> {
 
     ///keeps the snake moving
     fn automove(&mut self) {
-        let dir = self.snake.body[0].direction.clone();
-        self.take_direction(dir);
+        self.take_direction(self.snake.body[0].direction);
     }
 
     ///change direction of the snake to all parts and make it move
     fn take_direction(&mut self, dir: Direction) {
-        let mut head = true;
         write!(
             self.stdout,
             "{} ",
@@ -157,49 +156,39 @@ impl<T: Write, F: Read> Game<T, F> {
                 self.snake.body[i].y = self.snake.body[i - 1].y;
             }
         }
-        for i in &mut self.snake.body {
-            if head == true {
-                match dir {
-                    Direction::Up => {
-                        i.part = "▲";
-                        i.y -= 1;
-                    }
-                    Direction::Down => {
-                        i.part = "▼";
-                        i.y += 1;
-                    }
-                    Direction::Left => {
-                        i.part = "◀";
-                        i.x -= 1;
-                    }
-                    Direction::Right => {
-                        i.part = "▶";
-                        i.x += 1;
-                    }
+        self.snake.body.iter_mut().take(1).for_each(|head| {
+            match dir {
+                Direction::Up => {
+                    head.part = '▲';
+                    head.y -= 1;
                 }
-                i.direction = dir;
-                head = false;
-            } else {
-                match i.direction {
-                    Direction::Up => i.part = "▪",
-                    Direction::Down => i.part = "▪",
-                    Direction::Left => i.part = "▪",
-                    Direction::Right => i.part = "▪",
+                Direction::Down => {
+                    head.part = '▼';
+                    head.y += 1;
+                }
+                Direction::Left => {
+                    head.part = '◀';
+                    head.x -= 1;
+                }
+                Direction::Right => {
+                    head.part = '▶';
+                    head.x += 1;
                 }
             }
-        }
+            head.direction = dir;
+        });
     }
 
     ///when snake eats food it grows by one part
     fn grow_snake(&mut self) {
         let snake_size = self.snake.body.len() - 1;
-        let tail = self.snake.body[snake_size].clone();
+        let tail = self.snake.body[snake_size];
         match tail.direction {
             Direction::Up => {
                 self.snake.body.push(BodyPart {
                     x: tail.x,
                     y: tail.y + 1,
-                    part: "▪",
+                    part: '▪',
                     direction: tail.direction,
                 });
             }
@@ -207,7 +196,7 @@ impl<T: Write, F: Read> Game<T, F> {
                 self.snake.body.push(BodyPart {
                     x: tail.x,
                     y: tail.y - 1,
-                    part: "▪",
+                    part: '▪',
                     direction: tail.direction,
                 });
             }
@@ -215,7 +204,7 @@ impl<T: Write, F: Read> Game<T, F> {
                 self.snake.body.push(BodyPart {
                     x: tail.x - 1,
                     y: tail.y,
-                    part: "▪",
+                    part: '▪',
                     direction: tail.direction,
                 });
             }
@@ -223,7 +212,7 @@ impl<T: Write, F: Read> Game<T, F> {
                 self.snake.body.push(BodyPart {
                     x: tail.x + 1,
                     y: tail.y,
-                    part: "▪",
+                    part: '▪',
                     direction: tail.direction,
                 });
             }
@@ -260,7 +249,12 @@ impl<T: Write, F: Read> Game<T, F> {
         )
         .unwrap();
         write!(self.stdout, "{}q: quit", cursor::Goto(self.width + 7, 8)).unwrap();
-        write!(self.stdout, "{}Space: pause/start", cursor::Goto(self.width + 7, 9)).unwrap();
+        write!(
+            self.stdout,
+            "{}Space: pause/start",
+            cursor::Goto(self.width + 7, 9)
+        )
+        .unwrap();
         self.stdout.flush().unwrap();
     }
 
@@ -352,16 +346,14 @@ impl<T: Write, F: Read> Game<T, F> {
         let (screen_width, screen_width_border) = {
             if self.width as i32 / 2 - 8 < 0 {
                 (1, 17)
-            }
-            else {
+            } else {
                 (self.width / 2 - 8, self.width / 2 + 8)
             }
         };
         let screen_height = {
             if self.height as i32 / 2 - 3 < 0 {
                 1
-            }
-            else {
+            } else {
                 self.height / 2 - 3
             }
         };
@@ -441,13 +433,13 @@ impl<T: Write, F: Read> Game<T, F> {
                         BodyPart {
                             x: self.width / 2,
                             y: self.height / 2,
-                            part: "◀",
+                            part: '◀',
                             direction: Direction::Left,
                         },
                         BodyPart {
                             x: self.width / 2 + 1,
                             y: self.height / 2,
-                            part: "▪",
+                            part: '▪',
                             direction: Direction::Left,
                         },
                     ];
@@ -487,13 +479,13 @@ fn init(width: u16, height: u16) {
                 BodyPart {
                     x: width / 2,
                     y: height / 2,
-                    part: "◀",
+                    part: '◀',
                     direction: Direction::Left,
                 },
                 BodyPart {
                     x: width / 2 + 1,
                     y: height / 2,
-                    part: "▪",
+                    part: '▪',
                     direction: Direction::Left,
                 },
             ],
